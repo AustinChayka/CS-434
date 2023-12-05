@@ -14,14 +14,15 @@ matplotlib.rc('font', **font)
 
 # GLOBAL PARAMETERS FOR STOCHASTIC GRADIENT DESCENT
 np.random.seed(102)
-step_size = 0.01
+step_size = 0.005
 batch_size = 200
-max_epochs = 200
+max_epochs = 500
+momentum = 0.001
 
 # GLOBAL PARAMETERS FOR NETWORK ARCHITECTURE
-number_of_layers = 2
+number_of_layers = 5
 width_of_layers = 16  # only matters if number of layers > 1
-activation = "ReLU" if False else "Sigmoid" 
+activation = "ReLU" if True else "Sigmoid" 
 
 def main():
 
@@ -73,7 +74,7 @@ def main():
       net.backward(loss_grad)
 
       # Take a step of gradient descent
-      net.step(step_size)
+      net.step(step_size, momentum)
 
       #Record losses and accuracy then move to next batch
       losses.append(loss)
@@ -121,7 +122,12 @@ def main():
   ################################
   # Q7 Evaluate on Test
   ################################
-  raise Exception('Student error: You haven\'t implemented evaluating the test set yet.')
+  pred = net.forward(X_test)
+  y_test = np.reshape(np.argmax(pred, axis=1), (len(pred), 1))
+  header = np.array([['id', 'digit']])
+  test_out = np.concatenate((np.expand_dims(np.array(range(len(y_test)),dtype=int), axis=1), y_test), axis=1)
+  test_out = np.concatenate((header, test_out))
+  np.savetxt('test_predicted.csv', test_out, fmt='%s', delimiter=',')
 
 
 
@@ -131,6 +137,8 @@ class LinearLayer:
   def __init__(self, input_dim, output_dim):
     self.weights = np.random.randn(input_dim, output_dim)* np.sqrt(2. / input_dim)
     self.bias = np.ones( (1,output_dim) )*0.5
+    self.prev_weight_increment = 0
+    self.prev_bias_increment = 0
 
   # During the forward pass, we simply compute Xw+b
   def forward(self, input):
@@ -141,14 +149,15 @@ class LinearLayer:
   # Q3 Implementing Backward Pass for Linear
   #################################################
   def backward(self, grad):
-    #raise Exception('Student error: You haven\'t implemented the backward pass for linear yet.')
     self.grad_weights = np.transpose(self.input)@grad
     self.grad_bias = np.sum(grad)
     return grad@np.transpose(self.weights)
     
-  def step(self, step_size):
-    self.weights -= step_size*self.grad_weights
-    self.bias -= step_size*self.grad_bias
+  def step(self, step_size, momentum):
+    self.weights -= step_size*self.grad_weights + momentum * self.prev_weight_increment
+    self.bias -= step_size*self.grad_bias + momentum * self.prev_bias_increment
+    self.prev_weight_increment = step_size*self.grad_weights
+    self.prev_bias_increment = step_size*self.grad_bias
 
 
 ###############################################
@@ -181,9 +190,9 @@ class FeedForwardNeuralNetwork:
     for layer in reversed(self.layers):
       grad = layer.backward(grad)
 
-  def step(self, step_size=0.001):
+  def step(self, step_size=0.001, momentum=0):
     for layer in self.layers:
-      layer.step(step_size)
+      layer.step(step_size, momentum)
 
 
 
@@ -205,7 +214,7 @@ class Sigmoid:
     return grad * self.act * (1-self.act)
 
   # The Sigmoid has no parameters so nothing to do during a gradient descent step
-  def step(self,step_size):
+  def step(self,step_size,momentum):
     return
 
 # Rectified Linear Unit Activation Function
@@ -221,7 +230,7 @@ class ReLU:
     return grad * self.mask
 
   # No parameters so nothing to do during a gradient descent step
-  def step(self,step_size):
+  def step(self,step_size,momentum):
     return
 
 
