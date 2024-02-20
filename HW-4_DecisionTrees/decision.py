@@ -35,12 +35,13 @@ for m in range(M):
   # MODIFY IN HERE TO DECREASE CORRELATION
   ###################################################
 
-  X_data = X_train
-  y_data = y_train
+  choices = np.random.choice(X_train.shape[0], X_train.shape[0], replace=True)
+  X_data = X_train[choices]
+  y_data = y_train[choices]
 
 
   #Fit the model and store it's predictions
-  clf = tree.DecisionTreeClassifier(criterion="entropy")
+  clf = tree.DecisionTreeClassifier(criterion="entropy",max_features="log2")
   clf = clf.fit(X_data, y_data)
   preds[:,m]= clf.predict(X_test)
 

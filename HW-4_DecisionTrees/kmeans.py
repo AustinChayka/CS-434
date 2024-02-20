@@ -76,8 +76,9 @@ def imageProblem():
 
 
   # Perform k-means clustering
-  k=10
+  k=5
   centroids, assignments, SSE = kMeansClustering(img_feats, k, 30, min_size=0)
+  print(SSE)
 
   # Visualize Clusters
   for c in range(len(centroids)):
